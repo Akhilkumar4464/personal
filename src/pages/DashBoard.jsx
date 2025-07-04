@@ -5,10 +5,12 @@ import StatsCard from "../components/Statscard";
 import CommentsFeed from "../components/Comments";
 import ShortsFeed from "../components/ShortsFeed";
 import VideosFeed from "../components/VideosFeed";
+import ChannelProgressChart from "../components/ChannelProgressChart";
 
 export default function DashBoard() {
   const [channelData, setChannelData] = useState(null);
   const [error, setError] = useState(null);
+  const [history, setHistory] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -16,6 +18,21 @@ export default function DashBoard() {
         const data = await fetchChannelData();
         setChannelData(data);
         setError(null);
+
+        setHistory((prevHistory) => {
+          const newEntry = {
+            timestamp: new Date().toLocaleTimeString(),
+            subscriberCount: Number(data.subscriberCount),
+            viewCount: Number(data.viewCount),
+            videoCount: Number(data.videoCount),
+          };
+          const updatedHistory = [...prevHistory, newEntry];
+          // Keep only last 12 entries
+          if (updatedHistory.length > 12) {
+            updatedHistory.shift();
+          }
+          return updatedHistory;
+        });
       } catch {
         setError("Failed to load channel data.");
       }
@@ -34,6 +51,12 @@ export default function DashBoard() {
   if (!channelData) {
     return <div>Loading...</div>;
   }
+
+  // Prepare data for chart
+  const labels = history.map((entry) => entry.timestamp);
+  const subscriberData = history.map((entry) => entry.subscriberCount);
+  const viewData = history.map((entry) => entry.viewCount);
+  const videoData = history.map((entry) => entry.videoCount);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 text-gray-100">
@@ -56,6 +79,12 @@ export default function DashBoard() {
               />
             ))}
           </div>
+          <ChannelProgressChart
+            labels={labels}
+            subscriberData={subscriberData}
+            viewData={viewData}
+            videoData={videoData}
+          />
         </div>
 
         {/* Comments Section */}
